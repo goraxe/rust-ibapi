@@ -9,7 +9,7 @@ use time::macros::format_description;
 use time::OffsetDateTime;
 use time_tz::{timezones, OffsetResult, PrimitiveDateTimeExt, Tz};
 
-use crate::accounts::{FamilyCode, Position};
+use crate::accounts::{FamilyCode, PnL, Position};
 use crate::client::transport::{GlobalResponseIterator, MessageBus, ResponseIterator, TcpMessageBus};
 use crate::contracts::Contract;
 use crate::errors::Error;
@@ -210,6 +210,10 @@ impl Client {
     }
 
     // === Accounts ===
+    /// Get current [PnL]s for all accessible accounts.
+    pub fn pnl(&self, account_id: &str) -> core::result::Result<PnL, Error> {
+        accounts::pnl(self, account_id)
+    }
 
     /// Get current [Position]s for all accessible accounts.
     #[allow(clippy::needless_lifetimes)]
@@ -931,6 +935,11 @@ impl Client {
     /// Sends request for market rule.
     pub(crate) fn request_market_rule(&self, message: RequestMessage) -> Result<GlobalResponseIterator, Error> {
         self.message_bus.borrow_mut().request_market_rule(&message)
+    }
+
+    /// Sends request for request pnl single.
+    pub(crate) fn request_pnl(&self, message: RequestMessage) -> Result<GlobalResponseIterator, Error> {
+        self.message_bus.borrow_mut().request_pnl(&message)
     }
 
     /// Sends request for positions.

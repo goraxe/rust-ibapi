@@ -15,3 +15,5 @@ tarpaulin-report.html
 
 /target
 /results
+
+.vscode

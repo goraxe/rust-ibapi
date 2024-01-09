@@ -54,6 +54,10 @@ impl MessageBus for MessageBusStub {
         mock_global_request(self, message)
     }
 
+    fn request_pnl(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error> {
+        mock_global_request(self, message)
+    }
+
     fn request_positions(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error> {
         mock_global_request(self, message)
     }

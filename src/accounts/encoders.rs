@@ -2,6 +2,26 @@ use crate::messages::OutgoingMessages;
 use crate::messages::RequestMessage;
 use crate::Error;
 
+pub(crate) fn request_pnl(request_id: i32, account_id: &str) -> Result<RequestMessage, Error> {
+    let mut message = RequestMessage::new();
+
+    message.push_field(&OutgoingMessages::RequestPnL);
+    message.push_field(&request_id);
+    message.push_field(&account_id);
+    message.push_field(&"");
+
+    Ok(message)
+}
+
+pub(crate) fn cancel_pnl(request_id: i32) -> Result<RequestMessage, Error> {
+    let mut message = RequestMessage::new();
+
+    message.push_field(&OutgoingMessages::CancelPnL);
+    message.push_field(&request_id);
+
+    Ok(message)
+}
+
 pub(crate) fn request_positions() -> Result<RequestMessage, Error> {
     encode_simple(OutgoingMessages::RequestPositions, 1)
 }

@@ -2,7 +2,21 @@ use crate::contracts::SecurityType;
 use crate::messages::ResponseMessage;
 use crate::Error;
 
-use super::{FamilyCode, Position};
+use super::{FamilyCode, PnL, Position};
+
+pub(crate) fn decode_pnl(message: &mut ResponseMessage) -> Result<PnL, Error> {
+    message.skip(); // message type
+
+    message.next_int()?; // message version
+
+    let mut pnl = PnL::default();
+
+    pnl.daily_pnl = message.next_double()?;
+    pnl.unrealized_pnl = message.next_double()?;
+    pnl.realized_pnl = message.next_double()?;
+
+    Ok(pnl)
+}
 
 pub(crate) fn decode_position(message: &mut ResponseMessage) -> Result<Position, Error> {
     message.skip(); // message type

@@ -9,6 +9,16 @@ mod decoders;
 mod encoders;
 
 #[derive(Debug, Default)]
+pub struct PnL {
+    /// Daily PnL
+    pub daily_pnl: f64,
+    /// Unrealized PnL
+    pub unrealized_pnl: f64,
+    /// Realized PnL
+    pub realized_pnl: f64,
+}
+
+#[derive(Debug, Default)]
 pub struct Position {
     /// Account holding position
     pub account: String,
@@ -28,6 +38,23 @@ pub struct FamilyCode {
     pub family_code: String,
 }
 
+pub(crate) fn pnl(client: &Client, account_id: &str) -> Result<PnL, Error> {
+    client.check_server_version(server_versions::ACCOUNT_SUMMARY, "It does not support single PNL requests.")?;
+
+    let request_id = client.next_request_id();
+
+    let message = encoders::request_pnl(request_id, account_id)?;
+
+    let mut messages = client.request_pnl(message)?;
+
+    if let Some(mut message) = messages.next() {
+        cancel_pnl(client, request_id)?;
+        decoders::decode_pnl(&mut message)
+    } else {
+        Ok(PnL::default())
+    }
+}
+
 // Subscribes to position updates for all accessible accounts.
 // All positions sent initially, and then only updates as positions change.
 pub(crate) fn positions(client: &Client) -> Result<impl Iterator<Item = Position> + '_, Error> {
@@ -38,6 +65,16 @@ pub(crate) fn positions(client: &Client) -> Result<impl Iterator<Item = Position
     let messages = client.request_positions(message)?;
 
     Ok(PositionIterator { client, messages })
+}
+
+pub(crate) fn cancel_pnl(client: &Client, request_id: i32) -> Result<(), Error> {
+    client.check_server_version(server_versions::ACCOUNT_SUMMARY, "It does not support position cancellation.")?;
+
+    let message = encoders::cancel_pnl(request_id)?;
+
+    client.request_pnl(message)?;
+
+    Ok(())
 }
 
 pub(crate) fn cancel_positions(client: &Client) -> Result<(), Error> {
@@ -64,6 +101,7 @@ pub(crate) fn family_codes(client: &Client) -> Result<Vec<FamilyCode>, Error> {
         Ok(Vec::default())
     }
 }
+
 // Supports iteration over [Position].
 pub(crate) struct PositionIterator<'a> {
     client: &'a Client,
