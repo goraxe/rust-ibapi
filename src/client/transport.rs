@@ -28,6 +28,7 @@ pub(crate) trait MessageBus {
     fn request_next_order_id(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
     fn request_open_orders(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
     fn request_market_rule(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
+    fn request_account_summary(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
     fn request_pnl(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
     fn request_positions(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
     fn request_family_codes(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
@@ -67,6 +68,8 @@ struct GlobalChannels {
     open_orders_out: Arc<Receiver<ResponseMessage>>,
     send_market_rule: Arc<Sender<ResponseMessage>>,
     recv_market_rule: Arc<Receiver<ResponseMessage>>,
+    send_account_summary: Arc<Sender<ResponseMessage>>,
+    recv_account_summary: Arc<Receiver<ResponseMessage>>,
     send_pnl: Arc<Sender<ResponseMessage>>,
     recv_pnl: Arc<Receiver<ResponseMessage>>,
     send_positions: Arc<Sender<ResponseMessage>>,
@@ -80,6 +83,7 @@ impl GlobalChannels {
         let (order_ids_in, order_ids_out) = channel::unbounded();
         let (open_orders_in, open_orders_out) = channel::unbounded();
         let (send_market_rule, recv_market_rule) = channel::unbounded();
+        let (send_account_summary, recv_account_summary) = channel::unbounded();
         let (send_pnl, recv_pnl) = channel::unbounded();
         let (send_positions, recv_positions) = channel::unbounded();
         let (send_family_codes, recv_family_codes) = channel::unbounded();
@@ -91,6 +95,8 @@ impl GlobalChannels {
             open_orders_out: Arc::new(open_orders_out),
             send_market_rule: Arc::new(send_market_rule),
             recv_market_rule: Arc::new(recv_market_rule),
+            send_account_summary: Arc::new(send_account_summary),
+            recv_account_summary: Arc::new(recv_account_summary),
             send_pnl: Arc::new(send_pnl),
             recv_pnl: Arc::new(recv_pnl),
             send_positions: Arc::new(send_positions),
@@ -196,6 +202,11 @@ impl MessageBus for TcpMessageBus {
     fn request_market_rule(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error> {
         self.write_message(message)?;
         Ok(GlobalResponseIterator::new(Arc::clone(&self.globals.recv_market_rule)))
+    }
+
+    fn request_account_summary(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error> {
+        self.write_message(message)?;
+        Ok(GlobalResponseIterator::new(Arc::clone(&self.globals.recv_account_summary)))
     }
 
     fn request_pnl(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error> {
@@ -311,6 +322,9 @@ fn dispatch_message(
         }
         IncomingMessages::MarketRule => {
             globals.send_market_rule.send(message).unwrap();
+        }
+        IncomingMessages::AccountSummary | IncomingMessages::AccountSummaryEnd => {
+            globals.send_account_summary.send(message).unwrap();
         }
         IncomingMessages::PnL => {
             globals.send_pnl.send(message).unwrap();

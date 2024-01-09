@@ -2,7 +2,22 @@ use crate::contracts::SecurityType;
 use crate::messages::ResponseMessage;
 use crate::Error;
 
-use super::{FamilyCode, PnL, Position};
+use super::{AccountSummary, FamilyCode, PnL, Position};
+
+pub(crate) fn decode_account_summary(message: &mut ResponseMessage) -> Result<AccountSummary, Error> {
+    message.skip(); // message type
+
+    message.next_int()?; // version
+
+    let mut account_summary = AccountSummary::default();
+
+    account_summary.account_id = message.next_string()?;
+    account_summary.tag = message.next_string()?;
+    account_summary.value = message.next_string()?;
+    account_summary.currency = message.next_string()?;
+
+    Ok(account_summary)
+}
 
 pub(crate) fn decode_pnl(message: &mut ResponseMessage) -> Result<PnL, Error> {
     message.skip(); // message type

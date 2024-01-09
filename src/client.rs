@@ -9,7 +9,7 @@ use time::macros::format_description;
 use time::OffsetDateTime;
 use time_tz::{timezones, OffsetResult, PrimitiveDateTimeExt, Tz};
 
-use crate::accounts::{FamilyCode, PnL, Position};
+use crate::accounts::{AccountSummary, FamilyCode, PnL, Position};
 use crate::client::transport::{GlobalResponseIterator, MessageBus, ResponseIterator, TcpMessageBus};
 use crate::contracts::Contract;
 use crate::errors::Error;
@@ -210,6 +210,11 @@ impl Client {
     }
 
     // === Accounts ===
+    /// Get account summary group name and tags
+    pub fn account_summary(&self, group_name: &str, tags: &str) -> Result<AccountSummary, Error> {
+        accounts::account_summary(self, group_name, tags)
+    }
+
     /// Get current [PnL]s for all accessible accounts.
     pub fn pnl(&self, account_id: &str) -> core::result::Result<PnL, Error> {
         accounts::pnl(self, account_id)
@@ -937,7 +942,12 @@ impl Client {
         self.message_bus.borrow_mut().request_market_rule(&message)
     }
 
-    /// Sends request for request pnl single.
+    /// Sends request for request account summary.
+    pub(crate) fn request_account_summary(&self, message: RequestMessage) -> Result<GlobalResponseIterator, Error> {
+        self.message_bus.borrow_mut().request_account_summary(&message)
+    }
+
+    /// Sends request for request pnl.
     pub(crate) fn request_pnl(&self, message: RequestMessage) -> Result<GlobalResponseIterator, Error> {
         self.message_bus.borrow_mut().request_pnl(&message)
     }

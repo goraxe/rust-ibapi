@@ -14,4 +14,8 @@ fn main() {
     // PnL
     let pnl = client.pnl(&account_id).expect("request failed");
     println!("PnL: {:?}", pnl);
+
+    // Account summary
+    let account_summary = client.account_summary("All", "NetLiquidation").expect("request failed");
+    println!("Account Summary: {:?}", account_summary);
 }

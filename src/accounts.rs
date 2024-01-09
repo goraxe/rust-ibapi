@@ -9,6 +9,18 @@ mod decoders;
 mod encoders;
 
 #[derive(Debug, Default)]
+pub struct AccountSummary {
+    /// Account ID
+    pub account_id: String,
+    /// Account summary tag
+    pub tag: String,
+    /// Account summary value
+    pub value: String,
+    /// Currency
+    pub currency: String,
+}
+
+#[derive(Debug, Default)]
 pub struct PnL {
     /// Daily PnL
     pub daily_pnl: f64,
@@ -36,6 +48,40 @@ pub struct FamilyCode {
     pub account_id: String,
     /// Family code
     pub family_code: String,
+}
+
+pub(crate) fn account_summary(client: &Client, group_name: &str, tags: &str) -> Result<AccountSummary, Error> {
+    client.check_server_version(server_versions::ACCOUNT_SUMMARY, "It does not support account summary requests.")?;
+
+    let request_id = client.next_request_id();
+
+    let message = encoders::request_account_summary(request_id, group_name, tags)?;
+
+    let mut messages = client.request_account_summary(message)?;
+
+    if let Some(mut message) = messages.next() {
+        match message.message_type() {
+            IncomingMessages::AccountSummary => return Ok(decoders::decode_account_summary(&mut message)?),
+            IncomingMessages::AccountSummaryEnd => {
+                cancel_account_summary(client, request_id)?;
+            }
+            message => {
+                error!("account summary iterator unexpected message: {message:?}");
+            }
+        }
+    }
+
+    Ok(AccountSummary::default())
+}
+
+pub(crate) fn cancel_account_summary(client: &Client, request_id: i32) -> Result<(), Error> {
+    client.check_server_version(server_versions::ACCOUNT_SUMMARY, "It does not support account summary cancellation.")?;
+
+    let message = encoders::cancel_account_summary(request_id)?;
+
+    client.request_account_summary(message)?;
+
+    Ok(())
 }
 
 pub(crate) fn pnl(client: &Client, account_id: &str) -> Result<PnL, Error> {
