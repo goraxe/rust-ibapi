@@ -27,7 +27,11 @@ fn test_head_timestamp() {
 
     assert_eq!(head_timestamp, OffsetDateTime::from_unix_timestamp(1678323335).unwrap(), "bar.date");
 
-    let request_messages = client.message_bus.borrow().request_messages();
+    let request_messages = client
+        .message_bus
+        .read()
+        .or(Err(Error::Simple("failed to acquire read lock".to_string())))?
+        .request_messages();
 
     let head_timestamp_request = &request_messages[0];
     assert_eq!(
@@ -107,7 +111,11 @@ fn test_historical_data() {
 
     // Assert Request
 
-    let request_messages = client.message_bus.borrow().request_messages();
+    let request_messages = client
+        .message_bus
+        .read()
+        .or(Err(Error::Simple("failed to acquire read lock".to_string())))?
+        .request_messages();
 
     let head_timestamp_request = &request_messages[0];
     assert_eq!(

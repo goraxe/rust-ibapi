@@ -1,7 +1,7 @@
-use std::cell::RefCell;
 use std::fmt::Debug;
 use std::io::Write;
 use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::RwLock;
 
 use byteorder::{BigEndian, WriteBytesExt};
 use log::{debug, error, info};
@@ -40,7 +40,7 @@ pub struct Client {
 
     managed_accounts: String,
     client_id: i32, // ID of client.
-    pub(crate) message_bus: RefCell<Box<dyn MessageBus>>,
+    pub(crate) message_bus: RwLock<Box<TcpMessageBus>>,
     next_request_id: AtomicI32, // Next available request_id.
     order_id: AtomicI32,        // Next available order_id. Starts with value returned on connection.
 }
@@ -67,11 +67,11 @@ impl Client {
     /// println!("next_order_id: {}", client.next_order_id());
     /// ```
     pub fn connect(address: &str, client_id: i32) -> Result<Client, Error> {
-        let message_bus = RefCell::new(Box::new(TcpMessageBus::connect(address)?));
+        let message_bus = RwLock::new(Box::new(TcpMessageBus::connect(address)?));
         Client::do_connect(client_id, message_bus)
     }
 
-    fn do_connect(client_id: i32, message_bus: RefCell<Box<dyn MessageBus>>) -> Result<Client, Error> {
+    fn do_connect(client_id: i32, message_bus: RwLock<Box<TcpMessageBus>>) -> Result<Client, Error> {
         let mut client = Client {
             server_version: 0,
             connection_time: None,
@@ -87,7 +87,11 @@ impl Client {
         client.start_api()?;
         client.receive_account_info()?;
 
-        client.message_bus.borrow_mut().process_messages(client.server_version)?;
+        client
+            .message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .process_messages(client.server_version)?;
 
         Ok(client)
     }
@@ -98,9 +102,16 @@ impl Client {
         let version = format!("v{MIN_SERVER_VERSION}..{MAX_SERVER_VERSION}");
 
         let packet = prefix.to_owned() + &encode_packet(&version);
-        self.message_bus.borrow_mut().write(&packet)?;
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .write(&packet)?;
 
-        let ack = self.message_bus.borrow_mut().read_message();
+        let ack = self
+            .message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .read_message();
 
         match ack {
             Ok(mut response_message) => {
@@ -133,7 +144,10 @@ impl Client {
             prelude.push_field(&"");
         }
 
-        self.message_bus.borrow_mut().write_message(prelude)?;
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .write_message(prelude)?;
 
         Ok(())
     }
@@ -146,7 +160,11 @@ impl Client {
         let mut attempts = 0;
         const MAX_ATTEMPTS: i32 = 100;
         loop {
-            let mut message = self.message_bus.borrow_mut().read_message()?;
+            let mut message = self
+                .message_bus
+                .write()
+                .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+                .read_message()?;
 
             match message.message_type() {
                 IncomingMessages::NextValidId => {
@@ -909,57 +927,90 @@ impl Client {
     }
 
     pub(crate) fn send_message(&self, packet: RequestMessage) -> Result<(), Error> {
-        self.message_bus.borrow_mut().write_message(&packet)
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .write_message(&packet)
     }
 
     pub(crate) fn send_request(&self, request_id: i32, message: RequestMessage) -> Result<ResponseIterator, Error> {
         debug!("send_message({:?}, {:?})", request_id, message);
-        self.message_bus.borrow_mut().send_generic_message(request_id, &message)
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .send_generic_message(request_id, &message)
     }
 
     pub(crate) fn send_durable_request(&self, request_id: i32, message: RequestMessage) -> Result<ResponseIterator, Error> {
         debug!("send_durable_request({:?}, {:?})", request_id, message);
-        self.message_bus.borrow_mut().send_durable_message(request_id, &message)
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .send_durable_message(request_id, &message)
     }
 
     pub(crate) fn send_order(&self, order_id: i32, message: RequestMessage) -> Result<ResponseIterator, Error> {
         debug!("send_order({:?}, {:?})", order_id, message);
-        self.message_bus.borrow_mut().send_order_message(order_id, &message)
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .send_order_message(order_id, &message)
     }
 
     /// Sends request for the next valid order id.
     pub(crate) fn request_next_order_id(&self, message: RequestMessage) -> Result<GlobalResponseIterator, Error> {
-        self.message_bus.borrow_mut().request_next_order_id(&message)
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .request_next_order_id(&message)
     }
 
     /// Sends request for open orders.
     pub(crate) fn request_order_data(&self, message: RequestMessage) -> Result<GlobalResponseIterator, Error> {
-        self.message_bus.borrow_mut().request_open_orders(&message)
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .request_open_orders(&message)
     }
 
     /// Sends request for market rule.
     pub(crate) fn request_market_rule(&self, message: RequestMessage) -> Result<GlobalResponseIterator, Error> {
-        self.message_bus.borrow_mut().request_market_rule(&message)
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .request_market_rule(&message)
     }
 
     /// Sends request for request account summary.
     pub(crate) fn request_account_summary(&self, message: RequestMessage) -> Result<GlobalResponseIterator, Error> {
-        self.message_bus.borrow_mut().request_account_summary(&message)
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .request_account_summary(&message)
     }
 
     /// Sends request for request pnl.
     pub(crate) fn request_pnl(&self, message: RequestMessage) -> Result<GlobalResponseIterator, Error> {
-        self.message_bus.borrow_mut().request_pnl(&message)
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .request_pnl(&message)
     }
 
     /// Sends request for positions.
     pub(crate) fn request_positions(&self, message: RequestMessage) -> Result<GlobalResponseIterator, Error> {
-        self.message_bus.borrow_mut().request_positions(&message)
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .request_positions(&message)
     }
 
     /// Sends request for family codes.
     pub(crate) fn request_family_codes(&self, message: RequestMessage) -> Result<GlobalResponseIterator, Error> {
-        self.message_bus.borrow_mut().request_family_codes(&message)
+        self.message_bus
+            .write()
+            .or(Err(Error::Simple("failed to acquire write lock".to_string())))?
+            .request_family_codes(&message)
     }
 
     pub(crate) fn check_server_version(&self, version: i32, message: &str) -> Result<(), Error> {
