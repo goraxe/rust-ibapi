@@ -11,6 +11,7 @@ pub(crate) fn decode_account_summary(message: &mut ResponseMessage) -> Result<Ac
 
     let mut account_summary = AccountSummary::default();
 
+    account_summary.request_id = message.next_int()?;
     account_summary.account_id = message.next_string()?;
     account_summary.tag = message.next_string()?;
     account_summary.value = message.next_string()?;

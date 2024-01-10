@@ -10,6 +10,8 @@ mod encoders;
 
 #[derive(Debug, Default)]
 pub struct AccountSummary {
+    /// Request ID
+    pub request_id: i32,
     /// Account ID
     pub account_id: String,
     /// Account summary tag
