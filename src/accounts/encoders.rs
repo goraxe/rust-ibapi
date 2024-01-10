@@ -19,6 +19,7 @@ pub(crate) fn cancel_account_summary(request_id: i32) -> Result<RequestMessage, 
     let mut message = RequestMessage::new();
 
     message.push_field(&OutgoingMessages::CancelAccountSummary);
+    message.push_field(&1);
     message.push_field(&request_id);
 
     Ok(message)
