@@ -62,11 +62,11 @@ pub(crate) fn account_summary(client: &Client, group_name: &str, tags: &str) -> 
     if let Some(mut message) = messages.next() {
         match message.message_type() {
             IncomingMessages::AccountSummary => {
-                cancel_account_summary(client, request_id)?;
                 return Ok(decoders::decode_account_summary(&mut message)?);
             }
             IncomingMessages::AccountSummaryEnd => {
-                info!("account summary end");
+                cancel_account_summary(client, request_id)?;
+                info!("account summary end, cancelling account summary request");
             }
             message => {
                 error!("account summary iterator unexpected message: {message:?}");
