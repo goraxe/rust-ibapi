@@ -229,7 +229,7 @@ impl Client {
 
     // === Accounts ===
     /// Get account summary group name and tags
-    pub fn account_summary(&self, group_name: &str, tags: &str) -> Result<AccountSummary, Error> {
+    pub fn account_summary<'a>(&'a self, group_name: &str, tags: &str) -> Result<impl Iterator<Item = AccountSummary> + 'a, Error> {
         accounts::account_summary(self, group_name, tags)
     }
 

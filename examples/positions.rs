@@ -27,5 +27,7 @@ fn main() {
 
     // Account summary
     let account_summary = client.account_summary("All", "NetLiquidation").expect("request failed");
-    println!("Account Summary: {:?}", account_summary);
+    for account_summary in account_summary {
+        println!("Account Summary: {:?}", account_summary);
+    }
 }

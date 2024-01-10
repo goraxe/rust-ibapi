@@ -1,4 +1,4 @@
-use log::{error, info};
+use log::error;
 
 use crate::client::transport::GlobalResponseIterator;
 use crate::contracts::Contract;
@@ -50,31 +50,20 @@ pub struct FamilyCode {
     pub family_code: String,
 }
 
-pub(crate) fn account_summary(client: &Client, group_name: &str, tags: &str) -> Result<AccountSummary, Error> {
+pub(crate) fn account_summary<'a>(client: &'a Client, group_name: &str, tags: &str) -> Result<impl Iterator<Item = AccountSummary> + 'a, Error> {
     client.check_server_version(server_versions::ACCOUNT_SUMMARY, "It does not support account summary requests.")?;
 
     let request_id = client.next_request_id();
 
     let message = encoders::request_account_summary(request_id, group_name, tags)?;
 
-    let mut messages = client.request_account_summary(message)?;
+    let messages = client.request_account_summary(message)?;
 
-    if let Some(mut message) = messages.next() {
-        match message.message_type() {
-            IncomingMessages::AccountSummary => {
-                return Ok(decoders::decode_account_summary(&mut message)?);
-            }
-            IncomingMessages::AccountSummaryEnd => {
-                cancel_account_summary(client, request_id)?;
-                info!("account summary end, cancelling account summary request");
-            }
-            message => {
-                error!("account summary iterator unexpected message: {message:?}");
-            }
-        }
-    }
-
-    Ok(AccountSummary::default())
+    Ok(AccountSummaryIterator {
+        client,
+        messages,
+        request_id,
+    })
 }
 
 pub(crate) fn cancel_account_summary(client: &Client, request_id: i32) -> Result<(), Error> {
@@ -148,6 +137,44 @@ pub(crate) fn family_codes(client: &Client) -> Result<Vec<FamilyCode>, Error> {
         decoders::decode_family_codes(&mut message)
     } else {
         Ok(Vec::default())
+    }
+}
+
+// Supports iteration over [AccountSummary].
+pub(crate) struct AccountSummaryIterator<'a> {
+    client: &'a Client,
+    request_id: i32,
+    messages: GlobalResponseIterator,
+}
+
+impl<'a> Iterator for AccountSummaryIterator<'a> {
+    type Item = AccountSummary;
+
+    // Returns the next [AccountSummary]. Waits up to x seconds for next [AccountSummaryEnd].
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(mut message) = self.messages.next() {
+                match message.message_type() {
+                    IncomingMessages::AccountSummary => match decoders::decode_account_summary(&mut message) {
+                        Ok(val) => return Some(val),
+                        Err(err) => {
+                            error!("error decoding account summary: {err}");
+                        }
+                    },
+                    IncomingMessages::AccountSummaryEnd => {
+                        if let Err(e) = cancel_account_summary(self.client, self.request_id) {
+                            error!("error cancelling account summary: {e}")
+                        }
+                        return None;
+                    }
+                    message => {
+                        error!("account summary iterator unexpected message: {message:?}");
+                    }
+                }
+            } else {
+                return None;
+            }
+        }
     }
 }
 
