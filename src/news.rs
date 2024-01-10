@@ -12,6 +12,7 @@ pub struct NewsProvider {
 
 /// Requesting News Articles
 
+#[allow(dead_code)]
 /// Requests news providers which the user has subscribed to.
 pub fn news_providers(client: &Client) -> Result<Vec<NewsProvider>, Error> {
     // request = RequestNewsProvidersRequest::new()

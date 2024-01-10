@@ -1,4 +1,4 @@
-use log::error;
+use log::{error, info};
 
 use crate::client::transport::GlobalResponseIterator;
 use crate::contracts::Contract;
@@ -61,9 +61,12 @@ pub(crate) fn account_summary(client: &Client, group_name: &str, tags: &str) -> 
 
     if let Some(mut message) = messages.next() {
         match message.message_type() {
-            IncomingMessages::AccountSummary => return Ok(decoders::decode_account_summary(&mut message)?),
-            IncomingMessages::AccountSummaryEnd => {
+            IncomingMessages::AccountSummary => {
                 cancel_account_summary(client, request_id)?;
+                return Ok(decoders::decode_account_summary(&mut message)?);
+            }
+            IncomingMessages::AccountSummaryEnd => {
+                info!("account summary end");
             }
             message => {
                 error!("account summary iterator unexpected message: {message:?}");
