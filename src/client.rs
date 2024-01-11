@@ -913,7 +913,7 @@ impl Client {
     // == Internal Use ==
 
     #[cfg(test)]
-    pub(crate) fn stubbed(message_bus: RefCell<Box<dyn MessageBus>>, server_version: i32) -> Client {
+    pub(crate) fn stubbed(message_bus: RwLock<Box<TcpMessageBus>>, server_version: i32) -> Client {
         Client {
             server_version: server_version,
             connection_time: None,

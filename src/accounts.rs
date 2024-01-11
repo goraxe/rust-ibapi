@@ -142,6 +142,8 @@ pub(crate) fn family_codes(client: &Client) -> Result<Vec<FamilyCode>, Error> {
     }
 }
 
+// Support iteration over [PnL] updates.
+
 // Supports iteration over [AccountSummary].
 pub(crate) struct AccountSummaryIterator<'a> {
     client: &'a Client,

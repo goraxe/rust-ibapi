@@ -211,7 +211,10 @@ impl MessageBus for TcpMessageBus {
 
     fn request_pnl(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error> {
         self.write_message(message)?;
-        Ok(GlobalResponseIterator::new(Arc::clone(&self.globals.recv_pnl)))
+        Ok(GlobalResponseIterator::new_with_timeout(
+            Arc::clone(&self.globals.recv_pnl),
+            Duration::from_millis(250),
+        ))
     }
 
     fn request_positions(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error> {
@@ -267,6 +270,7 @@ impl MessageBus for TcpMessageBus {
                     continue;
                 }
             };
+            // FIXME - upon reconnect, this will block forever...
 
             // FIXME - does read block?
             // thread::sleep(Duration::from_secs(1));
@@ -349,6 +353,7 @@ fn dispatch_message(
     };
 }
 
+// FIXME read_exact will infinite loop if not enough data is available
 fn read_packet(mut reader: &TcpStream) -> Result<ResponseMessage, Error> {
     let message_size = read_header(reader)?;
     let mut data = vec![0_u8; message_size];
@@ -624,18 +629,26 @@ impl Iterator for ResponseIterator {
 #[derive(Debug)]
 pub(crate) struct GlobalResponseIterator {
     messages: Arc<Receiver<ResponseMessage>>,
+    timeout: Duration,
 }
 
 impl GlobalResponseIterator {
     pub fn new(messages: Arc<Receiver<ResponseMessage>>) -> Self {
-        Self { messages }
+        Self {
+            messages,
+            timeout: Duration::from_secs(5),
+        }
+    }
+
+    pub fn new_with_timeout(messages: Arc<Receiver<ResponseMessage>>, timeout: Duration) -> Self {
+        Self { messages, timeout }
     }
 }
 
 impl Iterator for GlobalResponseIterator {
     type Item = ResponseMessage;
     fn next(&mut self) -> Option<Self::Item> {
-        match self.messages.recv_timeout(Duration::from_secs(5)) {
+        match self.messages.recv_timeout(self.timeout) {
             Err(err) => {
                 info!("timeout receiving packet: {err}");
                 None
