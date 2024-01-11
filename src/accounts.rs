@@ -91,6 +91,8 @@ pub(crate) fn pnl(client: &Client, account_id: &str) -> Result<PnL, Error> {
         cancel_pnl(client, request_id)?;
         decoders::decode_pnl(&mut message)
     } else {
+        // either way cancel pnl
+        cancel_pnl(client, request_id)?;
         Ok(PnL::default())
     }
 }
