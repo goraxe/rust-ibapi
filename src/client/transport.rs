@@ -265,12 +265,21 @@ impl MessageBus for TcpMessageBus {
                     recorder.record_response(&message);
                     dispatch_message(message, server_version, &requests, &orders, &globals, &executions);
                 }
-                Err(err) => {
-                    error!("error reading packet: {:?}", err);
-                    continue;
-                }
+                Err(err) => match err {
+                    Error::Io(err) => {
+                        // FIXME - upon reconnect, this will block forever...
+                        if err.kind() == std::io::ErrorKind::UnexpectedEof {
+                            error!("connection might be closed by server");
+                            thread::sleep(Duration::from_secs(10));
+                            continue;
+                        }
+                    }
+                    _ => {
+                        error!("error reading packet: {:?}", err);
+                        continue;
+                    }
+                },
             };
-            // FIXME - upon reconnect, this will block forever...
 
             // FIXME - does read block?
             // thread::sleep(Duration::from_secs(1));

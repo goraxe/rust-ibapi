@@ -5,6 +5,14 @@ fn main() {
     let account_id = std::env::var("ACCOUNT_ID").expect("ACCOUNT_ID must be set");
     let client = Client::connect(&client_url, 919).expect("connection failed");
 
+    loop {
+        run_once(&client, account_id.clone());
+
+        std::thread::sleep(std::time::Duration::from_secs(10));
+    }
+}
+
+fn run_once(client: &Client, account_id: String) {
     // Positions
     let positions = client.positions().expect("request failed");
     for position in positions {
