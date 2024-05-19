@@ -2,6 +2,49 @@ use crate::messages::OutgoingMessages;
 use crate::messages::RequestMessage;
 use crate::Error;
 
+pub(crate) fn request_account_summary(request_id: i32, group_name: &str, tags: &str) -> Result<RequestMessage, Error> {
+    let mut message = RequestMessage::new();
+    let version = 1;
+
+    message.push_field(&OutgoingMessages::RequestAccountSummary);
+    message.push_field(&version);
+    message.push_field(&request_id);
+    message.push_field(&group_name);
+    message.push_field(&tags);
+
+    Ok(message)
+}
+
+pub(crate) fn cancel_account_summary(request_id: i32) -> Result<RequestMessage, Error> {
+    let mut message = RequestMessage::new();
+
+    message.push_field(&OutgoingMessages::CancelAccountSummary);
+    message.push_field(&1);
+    message.push_field(&request_id);
+
+    Ok(message)
+}
+
+pub(crate) fn request_pnl(request_id: i32, account_id: &str) -> Result<RequestMessage, Error> {
+    let mut message = RequestMessage::new();
+
+    message.push_field(&OutgoingMessages::RequestPnL);
+    message.push_field(&request_id);
+    message.push_field(&account_id);
+    message.push_field(&"");
+
+    Ok(message)
+}
+
+pub(crate) fn cancel_pnl(request_id: i32) -> Result<RequestMessage, Error> {
+    let mut message = RequestMessage::new();
+
+    message.push_field(&OutgoingMessages::CancelPnL);
+    message.push_field(&request_id);
+
+    Ok(message)
+}
+
 pub(crate) fn request_positions() -> Result<RequestMessage, Error> {
     encode_simple(OutgoingMessages::RequestPositions, 1)
 }

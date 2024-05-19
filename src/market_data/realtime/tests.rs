@@ -46,7 +46,11 @@ fn realtime_bars() {
     // Should trigger cancel realtime bars
     drop(bars);
 
-    let request_messages = client.message_bus.borrow().request_messages();
+    let request_messages = client
+        .message_bus
+        .read()
+        .or(Err(Error::Simple("failed to acquire read lock".to_string())))?
+        .request_messages();
 
     // Verify Requests
     let realtime_bars_request = &request_messages[0];

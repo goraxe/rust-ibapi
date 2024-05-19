@@ -3,7 +3,6 @@ use std::fmt::Debug;
 
 use log::{error, warn};
 use time::{Date, OffsetDateTime};
-use time_tz::Tz;
 
 use crate::client::transport::ResponseIterator;
 use crate::contracts::Contract;
@@ -167,6 +166,7 @@ impl ToDuration for i32 {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 struct HistogramData {
     pub price: f64,
@@ -575,4 +575,5 @@ impl<T: TickDecoder<T> + Debug> Iterator for TickIterator<T> {
     }
 }
 
+#[allow(dead_code)]
 struct HistogramDataIterator {}

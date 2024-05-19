@@ -28,6 +28,8 @@ pub(crate) trait MessageBus {
     fn request_next_order_id(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
     fn request_open_orders(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
     fn request_market_rule(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
+    fn request_account_summary(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
+    fn request_pnl(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
     fn request_positions(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
     fn request_family_codes(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error>;
 
@@ -66,6 +68,10 @@ struct GlobalChannels {
     open_orders_out: Arc<Receiver<ResponseMessage>>,
     send_market_rule: Arc<Sender<ResponseMessage>>,
     recv_market_rule: Arc<Receiver<ResponseMessage>>,
+    send_account_summary: Arc<Sender<ResponseMessage>>,
+    recv_account_summary: Arc<Receiver<ResponseMessage>>,
+    send_pnl: Arc<Sender<ResponseMessage>>,
+    recv_pnl: Arc<Receiver<ResponseMessage>>,
     send_positions: Arc<Sender<ResponseMessage>>,
     recv_positions: Arc<Receiver<ResponseMessage>>,
     send_family_codes: Arc<Sender<ResponseMessage>>,
@@ -77,6 +83,8 @@ impl GlobalChannels {
         let (order_ids_in, order_ids_out) = channel::unbounded();
         let (open_orders_in, open_orders_out) = channel::unbounded();
         let (send_market_rule, recv_market_rule) = channel::unbounded();
+        let (send_account_summary, recv_account_summary) = channel::unbounded();
+        let (send_pnl, recv_pnl) = channel::unbounded();
         let (send_positions, recv_positions) = channel::unbounded();
         let (send_family_codes, recv_family_codes) = channel::unbounded();
 
@@ -87,6 +95,10 @@ impl GlobalChannels {
             open_orders_out: Arc::new(open_orders_out),
             send_market_rule: Arc::new(send_market_rule),
             recv_market_rule: Arc::new(recv_market_rule),
+            send_account_summary: Arc::new(send_account_summary),
+            recv_account_summary: Arc::new(recv_account_summary),
+            send_pnl: Arc::new(send_pnl),
+            recv_pnl: Arc::new(recv_pnl),
             send_positions: Arc::new(send_positions),
             recv_positions: Arc::new(recv_positions),
             send_family_codes: Arc::new(send_family_codes),
@@ -192,6 +204,19 @@ impl MessageBus for TcpMessageBus {
         Ok(GlobalResponseIterator::new(Arc::clone(&self.globals.recv_market_rule)))
     }
 
+    fn request_account_summary(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error> {
+        self.write_message(message)?;
+        Ok(GlobalResponseIterator::new(Arc::clone(&self.globals.recv_account_summary)))
+    }
+
+    fn request_pnl(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error> {
+        self.write_message(message)?;
+        Ok(GlobalResponseIterator::new_with_timeout(
+            Arc::clone(&self.globals.recv_pnl),
+            Duration::from_millis(250),
+        ))
+    }
+
     fn request_positions(&mut self, message: &RequestMessage) -> Result<GlobalResponseIterator, Error> {
         self.write_message(message)?;
         Ok(GlobalResponseIterator::new(Arc::clone(&self.globals.recv_positions)))
@@ -240,10 +265,20 @@ impl MessageBus for TcpMessageBus {
                     recorder.record_response(&message);
                     dispatch_message(message, server_version, &requests, &orders, &globals, &executions);
                 }
-                Err(err) => {
-                    error!("error reading packet: {:?}", err);
-                    continue;
-                }
+                Err(err) => match err {
+                    Error::Io(err) => {
+                        // FIXME - upon reconnect, this will block forever...
+                        if err.kind() == std::io::ErrorKind::UnexpectedEof {
+                            error!("connection might be closed by server");
+                            thread::sleep(Duration::from_secs(10));
+                            continue;
+                        }
+                    }
+                    _ => {
+                        error!("error reading packet: {:?}", err);
+                        continue;
+                    }
+                },
             };
 
             // FIXME - does read block?
@@ -301,6 +336,12 @@ fn dispatch_message(
         IncomingMessages::MarketRule => {
             globals.send_market_rule.send(message).unwrap();
         }
+        IncomingMessages::AccountSummary | IncomingMessages::AccountSummaryEnd => {
+            globals.send_account_summary.send(message).unwrap();
+        }
+        IncomingMessages::PnL => {
+            globals.send_pnl.send(message).unwrap();
+        }
         IncomingMessages::Position | IncomingMessages::PositionEnd => {
             globals.send_positions.send(message).unwrap();
         }
@@ -321,6 +362,7 @@ fn dispatch_message(
     };
 }
 
+// FIXME read_exact will infinite loop if not enough data is available
 fn read_packet(mut reader: &TcpStream) -> Result<ResponseMessage, Error> {
     let message_size = read_header(reader)?;
     let mut data = vec![0_u8; message_size];
@@ -596,18 +638,26 @@ impl Iterator for ResponseIterator {
 #[derive(Debug)]
 pub(crate) struct GlobalResponseIterator {
     messages: Arc<Receiver<ResponseMessage>>,
+    timeout: Duration,
 }
 
 impl GlobalResponseIterator {
     pub fn new(messages: Arc<Receiver<ResponseMessage>>) -> Self {
-        Self { messages }
+        Self {
+            messages,
+            timeout: Duration::from_secs(5),
+        }
+    }
+
+    pub fn new_with_timeout(messages: Arc<Receiver<ResponseMessage>>, timeout: Duration) -> Self {
+        Self { messages, timeout }
     }
 }
 
 impl Iterator for GlobalResponseIterator {
     type Item = ResponseMessage;
     fn next(&mut self) -> Option<Self::Item> {
-        match self.messages.recv_timeout(Duration::from_secs(5)) {
+        match self.messages.recv_timeout(self.timeout) {
             Err(err) => {
                 info!("timeout receiving packet: {err}");
                 None
