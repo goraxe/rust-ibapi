@@ -28,7 +28,7 @@ const MIN_SERVER_VERSION: i32 = 100;
 const MAX_SERVER_VERSION: i32 = server_versions::HISTORICAL_SCHEDULE;
 
 // Type for the message bus
-pub(crate) type MessageBusRef = RwLock<Box<dyn MessageBus + Send + 'static>>;
+pub(crate) type MessageBusRef = RwLock<Box<dyn MessageBus + Send + Sync + 'static>>;
 
 /// TWS API Client. Manages the connection to TWS or Gateway.
 /// Tracks some global information such as server version and server time.

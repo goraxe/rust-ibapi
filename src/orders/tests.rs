@@ -1,16 +1,15 @@
-use std::cell::RefCell;
 use std::sync::RwLock;
 
 use crate::client::MessageBusRef;
 use crate::contracts::{contract_samples, Contract, SecurityType};
-use crate::stubs::MessageBusStub;
+use crate::stubs::{MessageBusStub, RequestMessageVec};
 
 use super::*;
 
 #[test]
 fn place_order() -> Result<(), Error> {
     let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub{
-        request_messages: RefCell::new(vec![]),
+        request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec![
             "5|13|76792991|TSLA|STK||0|?||SMART|USD|TSLA|NMS|BUY|100|MKT|0.0|0.0|DAY||DU1236109||0||100|1376327563|0|0|0||1376327563.0/DU1236109/100||||||||||0||-1|0||||||2147483647|0|0|0||3|0|0||0|0||0|None||0||||?|0|0||0|0||||||0|0|0|2147483647|2147483647|||0||IB|0|0||0|0|PreSubmitted|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308||||||0|0|0|None|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|0||||0|1|0|0|0|||0||".to_owned(),
             "3|13|PreSubmitted|0|100|0|1376327563|0|0|100||0||".to_owned(),
@@ -304,7 +303,7 @@ fn place_order() -> Result<(), Error> {
 #[test]
 fn cancel_order() -> Result<(), Error> {
     let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub {
-        request_messages: RefCell::new(vec![]),
+        request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec![
             "3|41|Cancelled|0|100|0|71270927|0|0|100||0||".to_owned(),
             "4|2|41|202|Order Canceled - reason:||".to_owned(),
@@ -351,7 +350,7 @@ fn cancel_order() -> Result<(), Error> {
 #[test]
 fn global_cancel() -> Result<(), Error> {
     let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub  {
-        request_messages: RefCell::new(vec![]),
+        request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec![],
     }));
 
@@ -373,7 +372,7 @@ fn global_cancel() -> Result<(), Error> {
 #[test]
 fn lid_order_id() -> Result<(), Error> {
     let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub  {
-        request_messages: RefCell::new(vec![]),
+        request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec!["9|1|43||".to_owned()],
     }));
 
@@ -397,7 +396,7 @@ fn lid_order_id() -> Result<(), Error> {
 #[test]
 fn completed_orders() -> Result<(), Error> {
     let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub {
-        request_messages: RefCell::new(vec![]),
+        request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec![
             "101|265598|AAPL|STK||0|?||SMART|USD|AAPL|NMS|BUY|0|MKT|0.0|0.0|DAY||DU1236109||0||1824933227|0|0|0|||||||||||0||-1||||||2147483647|0|0||3|0||0|None||0|0|0||0|0||||0|0|0|2147483647|2147483647||||IB|0|0||0|Filled|0|0|0|1.7976931348623157E308|1.7976931348623157E308|0|1|0||100|2147483647|0|Not an insider or substantial shareholder|0|0|9223372036854775807|20230306 12:28:30 America/Los_Angeles|Filled Size: 100|".to_owned(),
             "102|".to_owned(),
@@ -538,7 +537,7 @@ fn completed_orders() -> Result<(), Error> {
 #[test]
 fn open_orders() -> Result<(), Error> {
     let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub  {
-        request_messages: RefCell::new(vec![]),
+        request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec!["9|1|43||".to_owned()],
     }));
 
@@ -561,7 +560,7 @@ fn open_orders() -> Result<(), Error> {
 #[test]
 fn all_open_orders() -> Result<(), Error> {
     let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub  {
-        request_messages: RefCell::new(vec![]),
+        request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec!["9|1|43||".to_owned()],
     }));
 
@@ -584,7 +583,7 @@ fn all_open_orders() -> Result<(), Error> {
 #[test]
 fn auto_open_orders() -> Result<(), Error> {
     let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub  {
-        request_messages: RefCell::new(vec![]),
+        request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec!["9|1|43||".to_owned()],
     }));
 
@@ -608,7 +607,7 @@ fn auto_open_orders() -> Result<(), Error> {
 #[test]
 fn executions() -> Result<(), Error>{
     let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub  {
-        request_messages: RefCell::new(vec![]),
+        request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec!["9|1|43||".to_owned()],
     }));
 
@@ -644,7 +643,7 @@ fn executions() -> Result<(), Error>{
 #[test]
 fn encode_limit_order() -> Result<(), Error> {
     let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub  {
-        request_messages: RefCell::new(vec![]),
+        request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec![],
     }));
 
@@ -674,7 +673,7 @@ fn encode_limit_order() -> Result<(), Error> {
 #[test]
 fn encode_combo_market_order() -> Result<(), Error> {
     let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub  {
-        request_messages: RefCell::new(vec![]),
+        request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec![],
     }));
 
