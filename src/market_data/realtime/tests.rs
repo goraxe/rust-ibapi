@@ -3,7 +3,7 @@ use std::sync::RwLock;
 
 use time::OffsetDateTime;
 
-use crate::client::transport::MessageBus;
+use crate::client::MessageBusRef;
 use crate::contracts::contract_samples;
 use crate::messages::OutgoingMessages;
 use crate::stubs::MessageBusStub;
@@ -13,7 +13,7 @@ use super::*;
 
 #[test]
 fn realtime_bars() -> Result<(), Error > {
-    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub {
+    let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub {
         request_messages: RefCell::new(vec![]),
         response_messages: vec!["50|3|9001|1678323335|4028.75|4029.00|4028.25|4028.50|2|4026.75|1|".to_owned()],
     }));

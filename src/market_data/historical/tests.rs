@@ -4,6 +4,7 @@ use std::sync::RwLock;
 use time::macros::datetime;
 
 use crate::client::transport::MessageBus;
+use crate::client::MessageBusRef;
 use crate::market_data::historical::ToDuration;
 use crate::messages::OutgoingMessages;
 use crate::stubs::MessageBusStub;
@@ -12,7 +13,7 @@ use super::*;
 
 #[test]
 fn test_head_timestamp() {
-    let message_bus: RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub {
+    let message_bus: MessageBusRef = RwLock::new(Box::new(MessageBusStub {
         request_messages: RefCell::new(vec![]),
         response_messages: vec!["9|9000|1678323335|".to_owned()],
     }));
@@ -77,7 +78,7 @@ fn test_histogram_data() {
 
 #[test]
 fn test_historical_data() {
-    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub {
+    let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub {
         request_messages: RefCell::new(vec![]),
         response_messages: vec![
             "17\09000\020230413  16:31:22\020230415  16:31:22\02\020230413\0182.9400\0186.5000\0180.9400\0185.9000\0948837.22\0184.869\0324891\020230414\0183.8800\0186.2800\0182.0100\0185.0000\0810998.27\0183.9865\0277547\0".to_owned()
