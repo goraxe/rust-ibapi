@@ -1,13 +1,15 @@
 use std::cell::RefCell;
+use std::sync::RwLock;
 
+use crate::client::transport::MessageBus;
 use crate::contracts::{contract_samples, Contract, SecurityType};
 use crate::stubs::MessageBusStub;
 
 use super::*;
 
 #[test]
-fn place_order() {
-    let message_bus = RefCell::new(Box::new(MessageBusStub{
+fn place_order() -> Result<(), Error> {
+    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub{
         request_messages: RefCell::new(vec![]),
         response_messages: vec![
             "5|13|76792991|TSLA|STK||0|?||SMART|USD|TSLA|NMS|BUY|100|MKT|0.0|0.0|DAY||DU1236109||0||100|1376327563|0|0|0||1376327563.0/DU1236109/100||||||||||0||-1|0||||||2147483647|0|0|0||3|0|0||0|0||0|None||0||||?|0|0||0|0||||||0|0|0|2147483647|2147483647|||0||IB|0|0||0|0|PreSubmitted|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308||||||0|0|0|None|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|1.7976931348623157E308|0||||0|1|0|0|0|||0||".to_owned(),
@@ -296,11 +298,12 @@ fn place_order() {
     } else {
         assert!(false, "message[6] expected a commission report notification");
     }
+    Ok(())
 }
 
 #[test]
-fn cancel_order() {
-    let message_bus = RefCell::new(Box::new(MessageBusStub {
+fn cancel_order() -> Result<(), Error> {
+    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub {
         request_messages: RefCell::new(vec![]),
         response_messages: vec![
             "3|41|Cancelled|0|100|0|71270927|0|0|100||0||".to_owned(),
@@ -342,11 +345,12 @@ fn cancel_order() {
     if let Some(CancelOrderResult::Notice(Notice(message))) = results.next() {
         assert_eq!(message, "Order Canceled - reason:", "order status notice");
     }
+    Ok(())
 }
 
 #[test]
-fn global_cancel() {
-    let message_bus = RefCell::new(Box::new(MessageBusStub {
+fn global_cancel() -> Result<(), Error> {
+    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub  {
         request_messages: RefCell::new(vec![]),
         response_messages: vec![],
     }));
@@ -363,11 +367,12 @@ fn global_cancel() {
 
     assert_eq!(request_messages[0].encode(), "58\01\0");
     assert!(results.is_ok(), "failed to cancel order: {}", results.err().unwrap());
+    Ok(())
 }
 
 #[test]
-fn next_valid_order_id() {
-    let message_bus = RefCell::new(Box::new(MessageBusStub {
+fn lid_order_id() -> Result<(), Error> {
+    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub  {
         request_messages: RefCell::new(vec![]),
         response_messages: vec!["9|1|43||".to_owned()],
     }));
@@ -386,11 +391,12 @@ fn next_valid_order_id() {
 
     assert!(results.is_ok(), "failed to request next order id: {}", results.err().unwrap());
     assert_eq!(43, results.unwrap(), "next order id");
+    Ok(())
 }
 
 #[test]
-fn completed_orders() {
-    let message_bus = RefCell::new(Box::new(MessageBusStub{
+fn completed_orders() -> Result<(), Error> {
+    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub {
         request_messages: RefCell::new(vec![]),
         response_messages: vec![
             "101|265598|AAPL|STK||0|?||SMART|USD|AAPL|NMS|BUY|0|MKT|0.0|0.0|DAY||DU1236109||0||1824933227|0|0|0|||||||||||0||-1||||||2147483647|0|0||3|0||0|None||0|0|0||0|0||||0|0|0|2147483647|2147483647||||IB|0|0||0|Filled|0|0|0|1.7976931348623157E308|1.7976931348623157E308|0|1|0||100|2147483647|0|Not an insider or substantial shareholder|0|0|9223372036854775807|20230306 12:28:30 America/Los_Angeles|Filled Size: 100|".to_owned(),
@@ -526,11 +532,12 @@ fn completed_orders() {
     } else {
         assert!(false, "expected order data");
     }
+    Ok(())
 }
 
 #[test]
-fn open_orders() {
-    let message_bus = RefCell::new(Box::new(MessageBusStub {
+fn open_orders() -> Result<(), Error> {
+    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub  {
         request_messages: RefCell::new(vec![]),
         response_messages: vec!["9|1|43||".to_owned()],
     }));
@@ -548,11 +555,12 @@ fn open_orders() {
     assert_eq!(request_messages[0].encode_simple(), "5|1|");
 
     assert!(results.is_ok(), "failed to request completed orders: {}", results.err().unwrap());
+    Ok(())
 }
 
 #[test]
-fn all_open_orders() {
-    let message_bus = RefCell::new(Box::new(MessageBusStub {
+fn all_open_orders() -> Result<(), Error> {
+    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub  {
         request_messages: RefCell::new(vec![]),
         response_messages: vec!["9|1|43||".to_owned()],
     }));
@@ -570,11 +578,12 @@ fn all_open_orders() {
     assert_eq!(request_messages[0].encode_simple(), "16|1|");
 
     assert!(results.is_ok(), "failed to request completed orders: {}", results.err().unwrap());
+    Ok(())
 }
 
 #[test]
-fn auto_open_orders() {
-    let message_bus = RefCell::new(Box::new(MessageBusStub {
+fn auto_open_orders() -> Result<(), Error> {
+    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub  {
         request_messages: RefCell::new(vec![]),
         response_messages: vec!["9|1|43||".to_owned()],
     }));
@@ -593,11 +602,12 @@ fn auto_open_orders() {
     assert_eq!(request_messages[0].encode_simple(), "15|1|1|");
 
     assert!(results.is_ok(), "failed to request completed orders: {}", results.err().unwrap());
+    Ok(())
 }
 
 #[test]
-fn executions() {
-    let message_bus = RefCell::new(Box::new(MessageBusStub {
+fn executions() -> Result<(), Error>{
+    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub  {
         request_messages: RefCell::new(vec![]),
         response_messages: vec!["9|1|43||".to_owned()],
     }));
@@ -628,11 +638,12 @@ fn executions() {
 
     assert!(results.is_ok(), "failed to request completed orders: {}", results.err().unwrap());
     // assert_eq!(43, results.unwrap(), "next order id");
+    Ok(())
 }
 
 #[test]
-fn encode_limit_order() {
-    let message_bus = RefCell::new(Box::new(MessageBusStub {
+fn encode_limit_order() -> Result<(), Error> {
+    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub  {
         request_messages: RefCell::new(vec![]),
         response_messages: vec![],
     }));
@@ -657,11 +668,12 @@ fn encode_limit_order() {
     );
 
     assert!(results.is_ok(), "failed to place order: {}", results.err().unwrap());
+    Ok(())
 }
 
 #[test]
-fn encode_combo_market_order() {
-    let message_bus = RefCell::new(Box::new(MessageBusStub {
+fn encode_combo_market_order() -> Result<(), Error> {
+    let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(MessageBusStub  {
         request_messages: RefCell::new(vec![]),
         response_messages: vec![],
     }));
@@ -686,4 +698,5 @@ fn encode_combo_market_order() {
     );
 
     assert!(results.is_ok(), "failed to place order: {}", results.err().unwrap());
+    Ok(())
 }

@@ -40,7 +40,7 @@ pub struct Client {
 
     managed_accounts: String,
     client_id: i32, // ID of client.
-    pub(crate) message_bus: RwLock<Box<TcpMessageBus>>,
+    pub(crate) message_bus: RwLock<Box<dyn MessageBus + 'static>>,
     next_request_id: AtomicI32, // Next available request_id.
     order_id: AtomicI32,        // Next available order_id. Starts with value returned on connection.
 }
@@ -67,11 +67,11 @@ impl Client {
     /// println!("next_order_id: {}", client.next_order_id());
     /// ```
     pub fn connect(address: &str, client_id: i32) -> Result<Client, Error> {
-        let message_bus = RwLock::new(Box::new(TcpMessageBus::connect(address)?));
+        let message_bus : RwLock<Box<dyn MessageBus>> = RwLock::new(Box::new(TcpMessageBus::connect(address)?));
         Client::do_connect(client_id, message_bus)
     }
 
-    fn do_connect(client_id: i32, message_bus: RwLock<Box<TcpMessageBus>>) -> Result<Client, Error> {
+    fn do_connect(client_id: i32, message_bus: RwLock<Box<dyn MessageBus + 'static>>) -> Result<Client, Error> {
         let mut client = Client {
             server_version: 0,
             connection_time: None,
@@ -913,7 +913,7 @@ impl Client {
     // == Internal Use ==
 
     #[cfg(test)]
-    pub(crate) fn stubbed(message_bus: RwLock<Box<TcpMessageBus>>, server_version: i32) -> Client {
+    pub(crate) fn stubbed(message_bus: RwLock<Box<dyn MessageBus>>, server_version: i32) -> Client {
         Client {
             server_version: server_version,
             connection_time: None,
