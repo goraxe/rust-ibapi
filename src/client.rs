@@ -13,8 +13,9 @@ use crate::accounts::{AccountSummary, FamilyCode, PnL, Position};
 use crate::client::transport::{GlobalResponseIterator, MessageBus, ResponseIterator, TcpMessageBus};
 use crate::contracts::Contract;
 use crate::errors::Error;
-use crate::market_data::historical;
 use crate::market_data::realtime::{self, Bar, BarSize, WhatToShow};
+use crate::market_data::scanners::{ScannerData, ScannerSubscription, ScannerSubscriptionFilter, ScannerSubscriptionOptions};
+use crate::market_data::{historical, scanners};
 use crate::messages::RequestMessage;
 use crate::messages::{IncomingMessages, OutgoingMessages};
 use crate::orders::{Order, OrderDataResult, OrderNotification};
@@ -911,6 +912,19 @@ impl Client {
         ignore_size: bool,
     ) -> Result<impl Iterator<Item = realtime::MidPoint> + 'a, Error> {
         realtime::tick_by_tick_midpoint(self, contract, number_of_ticks, ignore_size)
+    }
+
+    pub fn scanner_subscription<'a>(
+        &'a self,
+        subscription: &ScannerSubscription,
+        scanner_subscription_options: Option<&ScannerSubscriptionOptions>,
+        scanner_subscription_filter: Option<&ScannerSubscriptionFilter>,
+    ) -> Result<impl Iterator<Item = Vec<ScannerData>> + 'a, Error> {
+        scanners::scanner_subscription(self,
+            subscription,
+            scanner_subscription_options,
+            scanner_subscription_filter
+        )
     }
 
     // == Internal Use ==
