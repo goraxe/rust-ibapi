@@ -70,7 +70,7 @@ impl Client {
     /// println!("next_order_id: {}", client.next_order_id());
     /// ```
     pub fn connect(address: &str, client_id: i32) -> Result<Client, Error> {
-        let message_bus : MessageBusRef = RwLock::new(Box::new(TcpMessageBus::connect(address)?));
+        let message_bus: MessageBusRef = RwLock::new(Box::new(TcpMessageBus::connect(address)?));
         Client::do_connect(client_id, message_bus)
     }
 
@@ -222,7 +222,7 @@ impl Client {
 
     /// The time of the server when the client connected
     pub fn connection_time(&self) -> Option<OffsetDateTime> {
-        self.connection_time.clone()
+        self.connection_time
     }
 
     /// Returns the managed accounts.
@@ -1066,7 +1066,7 @@ fn parse_connection_time(connection_time: &str) -> (Option<OffsetDateTime>, Opti
         },
         Err(err) => {
             error!("could not parse connection time from {date_str}: {err}");
-            return (None, Some(timezone));
+            (None, Some(timezone))
         }
     }
 }
