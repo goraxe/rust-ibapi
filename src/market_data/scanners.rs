@@ -65,6 +65,7 @@ impl Default for ScannerSubscription {
     }
 }
 
+#[derive(Debug)]
 pub struct ScannerData {
 
     contract: ContractDetails,
