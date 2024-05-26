@@ -88,6 +88,11 @@ impl<'a> ScannerSubscriptionIterator<'a> {
 
         Self { client, request_id, responses }
     }
+
+    fn cancel(&mut self) -> Result<(), Error> {
+        let message = encoders::cancel_scanner_subscription(self.request_id)?;
+        self.client.send_message(message)
+    }
 }
 
 impl<'a> Iterator for ScannerSubscriptionIterator<'a> {
@@ -117,6 +122,12 @@ impl<'a> Iterator for ScannerSubscriptionIterator<'a> {
             },
                 None => None,
             } 
+    }
+}
+
+impl <'a> Drop for ScannerSubscriptionIterator<'a> {
+    fn drop(&mut self) {
+        self.cancel().unwrap();
     }
 }
 
