@@ -14,27 +14,27 @@ pub type ScannerSubscriptionOptions = Vec<TagValue>;
 pub type ScannerSubscriptionFilter = Vec<TagValue>;
 
 pub struct ScannerSubscription {
-    number_of_rows: i32,
-    instrument: String,
-    location_code: String,
-    scan_code: String,
-    above_price:  f64,
-    below_price: f64,
-    above_volume: i32,
-    market_cap_above: f64,
-    market_cap_below: f64,
-    moody_rating_above: String,
-    moody_rating_below: String,
-    sp_rating_above: String,
-    sp_rating_below: String,
-    maturity_date_above: String,
-    maturity_date_below: String,
-    coupon_rate_above: f64,
-    coupon_rate_below: f64,
-    exclude_converiable: i32,
-    average_options_volume_above: i32,
-    scanner_settings_pairs: String,
-    stock_type_filter: String
+    pub number_of_rows: i32,
+    pub instrument: String,
+    pub location_code: String,
+    pub scan_code: String,
+    pub above_price:  f64,
+    pub below_price: f64,
+    pub above_volume: i32,
+    pub market_cap_above: f64,
+    pub market_cap_below: f64,
+    pub moody_rating_above: String,
+    pub moody_rating_below: String,
+    pub sp_rating_above: String,
+    pub sp_rating_below: String,
+    pub maturity_date_above: String,
+    pub maturity_date_below: String,
+    pub coupon_rate_above: f64,
+    pub coupon_rate_below: f64,
+    pub exclude_converiable: i32,
+    pub average_options_volume_above: i32,
+    pub scanner_settings_pairs: String,
+    pub stock_type_filter: String
 }
 
 impl Default for ScannerSubscription {
