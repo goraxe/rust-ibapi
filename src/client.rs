@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::io::Write;
 use std::sync::atomic::{AtomicI32, Ordering};
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use byteorder::{BigEndian, WriteBytesExt};
 use log::{debug, error, info};
@@ -29,11 +29,12 @@ const MIN_SERVER_VERSION: i32 = 100;
 const MAX_SERVER_VERSION: i32 = server_versions::HISTORICAL_SCHEDULE;
 
 // Type for the message bus
-pub(crate) type MessageBusRef = RwLock<Box<dyn MessageBus + Send + Sync + 'static>>;
+pub(crate) type MessageBusRef = Arc<RwLock<Box<dyn MessageBus + Send + Sync + 'static>>>;
 
 /// TWS API Client. Manages the connection to TWS or Gateway.
 /// Tracks some global information such as server version and server time.
 /// Supports generation of order ids
+#[derive(Clone)]
 pub struct Client {
     /// IB server version
     pub(crate) server_version: i32,
@@ -45,8 +46,8 @@ pub struct Client {
     managed_accounts: String,
     client_id: i32, // ID of client.
     pub(crate) message_bus: MessageBusRef,
-    next_request_id: AtomicI32, // Next available request_id.
-    order_id: AtomicI32,        // Next available order_id. Starts with value returned on connection.
+    next_request_id: Arc<AtomicI32>, // Next available request_id.
+    order_id: Arc<AtomicI32>,        // Next available order_id. Starts with value returned on connection.
 }
 
 impl Client {
@@ -71,7 +72,7 @@ impl Client {
     /// println!("next_order_id: {}", client.next_order_id());
     /// ```
     pub fn connect(address: &str, client_id: i32) -> Result<Client, Error> {
-        let message_bus: MessageBusRef = RwLock::new(Box::new(TcpMessageBus::connect(address)?));
+        let message_bus: MessageBusRef = Arc::new(RwLock::new(Box::new(TcpMessageBus::connect(address)?)));
         Client::do_connect(client_id, message_bus)
     }
 
@@ -83,8 +84,8 @@ impl Client {
             managed_accounts: String::from(""),
             message_bus,
             client_id,
-            next_request_id: AtomicI32::new(9000),
-            order_id: AtomicI32::new(-1),
+            next_request_id: Arc::new(AtomicI32::new(9000)),
+            order_id: Arc::new(AtomicI32::new(-1)),
         };
 
         client.handshake()?;
@@ -938,8 +939,8 @@ impl Client {
             managed_accounts: String::from(""),
             message_bus,
             client_id: 100,
-            next_request_id: AtomicI32::new(9000),
-            order_id: AtomicI32::new(-1),
+            next_request_id: AtomicI32::new(9000).into(),
+            order_id: AtomicI32::new(-1).into(),
         }
     }
 

@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use time::OffsetDateTime;
 
@@ -13,10 +13,10 @@ use super::*;
 
 #[test]
 fn realtime_bars() -> Result<(), Error > {
-    let message_bus : MessageBusRef = RwLock::new(Box::new(MessageBusStub {
+    let message_bus : MessageBusRef = Arc::new(RwLock::new(Box::new(MessageBusStub {
         request_messages: RequestMessageVec::new(vec![]),
         response_messages: vec!["50|3|9001|1678323335|4028.75|4029.00|4028.25|4028.50|2|4026.75|1|".to_owned()],
-    }));
+    })));
 
     let client = Client::stubbed(message_bus, server_versions::SIZE_RULES);
 
