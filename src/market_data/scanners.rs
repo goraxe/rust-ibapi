@@ -1,14 +1,13 @@
 // request_scanner_submod encoders;
 use log::error;
-mod encoders;
 pub mod decoders;
+mod encoders;
 
 use crate::client::transport::ResponseIterator;
 use crate::contracts::ContractDetails;
 use crate::messages::{IncomingMessages, RequestMessage};
 use crate::orders::TagValue;
 use crate::{Client, Error};
-
 
 pub type ScannerSubscriptionOptions = Vec<TagValue>;
 pub type ScannerSubscriptionFilter = Vec<TagValue>;
@@ -18,7 +17,7 @@ pub struct ScannerSubscription {
     pub instrument: String,
     pub location_code: String,
     pub scan_code: String,
-    pub above_price:  f64,
+    pub above_price: f64,
     pub below_price: f64,
     pub above_volume: i32,
     pub market_cap_above: f64,
@@ -34,7 +33,7 @@ pub struct ScannerSubscription {
     pub exclude_converiable: i32,
     pub average_options_volume_above: i32,
     pub scanner_settings_pairs: String,
-    pub stock_type_filter: String
+    pub stock_type_filter: String,
 }
 
 impl Default for ScannerSubscription {
@@ -44,7 +43,7 @@ impl Default for ScannerSubscription {
             instrument: "".to_string(),
             location_code: "".to_string(),
             scan_code: "".to_string(),
-            above_price:  f64::MAX,
+            above_price: f64::MAX,
             below_price: f64::MAX,
             above_volume: i32::MAX,
             market_cap_above: f64::MAX,
@@ -60,14 +59,13 @@ impl Default for ScannerSubscription {
             exclude_converiable: i32::MAX,
             average_options_volume_above: i32::MAX,
             scanner_settings_pairs: "".to_string(),
-            stock_type_filter: "".to_string()
+            stock_type_filter: "".to_string(),
         }
     }
 }
 
 #[derive(Debug)]
 pub struct ScannerData {
-
     contract: ContractDetails,
     rank: i32,
     distance: String,
@@ -75,7 +73,6 @@ pub struct ScannerData {
     projection: String,
     legs: String,
 }
-
 
 pub(crate) struct ScannerSubscriptionIterator<'a> {
     client: &'a Client,
@@ -85,8 +82,11 @@ pub(crate) struct ScannerSubscriptionIterator<'a> {
 
 impl<'a> ScannerSubscriptionIterator<'a> {
     fn new(client: &'a Client, request_id: i32, responses: ResponseIterator) -> Self {
-
-        Self { client, request_id, responses }
+        Self {
+            client,
+            request_id,
+            responses,
+        }
     }
 
     fn cancel(&mut self) -> Result<(), Error> {
@@ -99,56 +99,55 @@ impl<'a> Iterator for ScannerSubscriptionIterator<'a> {
     type Item = Vec<ScannerData>;
 
     fn next(&mut self) -> Option<Self::Item> {
-            match self.responses.next() {
+        match self.responses.next() {
             Some(mut message) => match message.message_type() {
-
                 IncomingMessages::ScannerData => {
-                        let decoded = decoders::decode_scan_data_list(&mut message);
-                        if let Ok(results) = decoded {
-                            return Some(results);
-                        }
+                    let decoded = decoders::decode_scan_data_list(&mut message);
+                    if let Ok(results) = decoded {
+                        return Some(results);
+                    }
 
                     error!("unexpected message: {:?}", decoded.err());
                     None
-                        
-                },
-                    _ => {
-                        error!("unexpected message {message:?}");
-                        None
-                    },
-                    
-                /* IncomingMessages::Error => Err(Error::Simple(message.peek_string(4))),
-                _ => Err(Error::Simple(format!("unexpected message: {:?}", message.message_type()))), */
+                }
+                _ => {
+                    error!("unexpected message {message:?}");
+                    None
+                }
+
+                /*
+                IncomingMessages::Error => Err(Error::Simple(message.peek_string(4))),
+                _ => Err(Error::Simple(format!("unexpected message: {:?}", message.message_type()))),*/
             },
-                None => None,
-            } 
+            None => None,
+        }
     }
 }
 
-impl <'a> Drop for ScannerSubscriptionIterator<'a> {
+impl<'a> Drop for ScannerSubscriptionIterator<'a> {
     fn drop(&mut self) {
         self.cancel().unwrap();
     }
 }
 
-pub(crate) fn scanner_subscription<'a> (
+pub(crate) fn scanner_subscription<'a>(
     client: &'a Client,
     scanner_subscription: &ScannerSubscription,
-        scanner_subscription_options: Option<&ScannerSubscriptionOptions>,
-        scanner_subscription_filter: Option<&ScannerSubscriptionFilter>,
+    scanner_subscription_options: Option<&ScannerSubscriptionOptions>,
+    scanner_subscription_filter: Option<&ScannerSubscriptionFilter>,
 ) -> Result<ScannerSubscriptionIterator<'a>, Error> {
-    let filter = match scanner_subscription_filter { Some(filter) => filter.to_owned(), None => Vec::<TagValue>::default() };
-    let options = match scanner_subscription_options { Some(options) => options.to_owned(), None => Vec::<TagValue>::default() };
+    let filter = match scanner_subscription_filter {
+        Some(filter) => filter.to_owned(),
+        None => Vec::<TagValue>::default(),
+    };
+    let options = match scanner_subscription_options {
+        Some(options) => options.to_owned(),
+        None => Vec::<TagValue>::default(),
+    };
     let request_id = client.next_request_id();
-    let request = encoders::scanner_subscription(
-        client.server_version,
-        request_id, 
-        scanner_subscription, 
-        &filter,
-        &options,
-    )?;
+    let request = encoders::scanner_subscription(client.server_version, request_id, scanner_subscription, &filter, &options)?;
 
-    let responses= client.send_durable_request(request_id, request)?;
+    let responses = client.send_request(request_id, request)?;
 
     Ok(ScannerSubscriptionIterator::new(client, request_id, responses))
     /*
