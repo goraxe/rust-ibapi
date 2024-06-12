@@ -147,7 +147,7 @@ pub(crate) fn scanner_subscription<'a>(
     let request_id = client.next_request_id();
     let request = encoders::scanner_subscription(client.server_version, request_id, scanner_subscription, &filter, &options)?;
 
-    let responses = client.send_request(request_id, request)?;
+    let responses = client.send_durable_request(request_id, request)?;
 
     Ok(ScannerSubscriptionIterator::new(client, request_id, responses))
     /*
