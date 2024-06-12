@@ -16,7 +16,7 @@ pub(crate) fn decode_scan_data_list(message: &mut ResponseMessage ) -> Result<Ve
 
     let mut results = Vec::<ScannerData>::new();
 
-    for _ in 0..num_items {
+    for _ in 0..num_items-1 {
         trace!("parsing rank");
         let rank = message.next_int()?;
         trace!("parsing contract");
