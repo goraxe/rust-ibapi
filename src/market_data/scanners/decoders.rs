@@ -1,22 +1,24 @@
 use log::trace;
 
-use crate::{contracts::{self, Contract, ContractDetails}, messages::ResponseMessage, Error};
+use crate::{
+    contracts::{self, Contract, ContractDetails},
+    messages::ResponseMessage,
+    Error,
+};
 
 use super::ScannerData;
 
-
-
-pub(crate) fn decode_scan_data_list(message: &mut ResponseMessage ) -> Result<Vec<ScannerData>, Error> {
-
+pub(crate) fn decode_scan_data_list(message: &mut ResponseMessage) -> Result<Vec<ScannerData>, Error> {
+    message.skip(); //type
     message.skip(); // version
-    message.skip(); // request id 
+    message.skip(); // request id
 
     trace!("parsing num_items");
     let num_items = message.next_int()?;
 
     let mut results = Vec::<ScannerData>::new();
 
-    for _ in 0..num_items-1 {
+    for _ in 0..num_items - 1 {
         trace!("parsing rank");
         let rank = message.next_int()?;
         trace!("parsing contract");
@@ -50,16 +52,16 @@ pub(crate) fn decode_scan_data_list(message: &mut ResponseMessage ) -> Result<Ve
         trace!("parsing legs");
         let legs = message.next_string()?;
 
-        let data = ScannerData{
+        let data = ScannerData {
             rank,
-            contract: ContractDetails{
+            contract: ContractDetails {
                 contract: contracts::Contract {
                     contract_id: contract_id.try_into().unwrap(),
                     symbol: contract_contract_symbol,
-                    //security_type:contract_contract_sectype, 
+                    //security_type:contract_contract_sectype,
                     last_trade_date_or_contract_month: contract_contract_last_trade,
                     strike: contract_contract_strike,
-                //    right: contract_contract_right, 
+                    //    right: contract_contract_right,
                     exchange: contract_contract_exchange,
                     currency: contract_contract_currency,
                     local_symbol: contract_contract_local_symbol,
@@ -69,16 +71,14 @@ pub(crate) fn decode_scan_data_list(message: &mut ResponseMessage ) -> Result<Ve
                 },
                 market_name: contract_market_name,
                 ..ContractDetails::default()
-
             },
             distance,
             benchmark,
             projection,
-            legs
+            legs,
         };
-       results.push(data);
-
+        results.push(data);
     }
 
-        Ok(results)
+    Ok(results)
 }
