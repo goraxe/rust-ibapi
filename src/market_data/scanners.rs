@@ -66,12 +66,12 @@ impl Default for ScannerSubscription {
 
 #[derive(Debug)]
 pub struct ScannerData {
-    contract: ContractDetails,
-    rank: i32,
-    distance: String,
-    benchmark: String,
-    projection: String,
-    legs: String,
+    pub contract: ContractDetails,
+    pub rank: i32,
+    pub distance: String,
+    pub benchmark: String,
+    pub projection: String,
+    pub legs: String,
 }
 
 pub(crate) struct ScannerSubscriptionIterator<'a> {
