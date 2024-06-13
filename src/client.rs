@@ -851,7 +851,7 @@ impl Client {
         bar_size: BarSize,
         what_to_show: WhatToShow,
         use_rth: bool,
-    ) -> Result<impl Iterator<Item = Bar> + Clone + 'a, Error> {
+    ) -> Result<impl Iterator<Item = Bar> + Clone + Send + Sync + 'a, Error> {
         realtime::realtime_bars(self, contract, &bar_size, &what_to_show, use_rth, Vec::default())
     }
 
