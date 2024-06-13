@@ -74,14 +74,14 @@ pub struct ScannerData {
     pub legs: String,
 }
 
-pub(crate) struct ScannerSubscriptionIterator {
-    client: &Client,
+pub(crate) struct ScannerSubscriptionIterator<'a> {
+    client: &'a Client,
     request_id: i32,
     responses: ResponseIterator,
 }
 
-impl ScannerSubscriptionIterator {
-    fn new(client: &Client, request_id: i32, responses: ResponseIterator) -> Self {
+impl<'a> ScannerSubscriptionIterator<'a> {
+    fn new(client: &'a Client, request_id: i32, responses: ResponseIterator) -> Self {
         Self {
             client,
             request_id,
@@ -95,7 +95,7 @@ impl ScannerSubscriptionIterator {
     }
 }
 
-impl Iterator for ScannerSubscriptionIterator {
+impl<'a> Iterator for ScannerSubscriptionIterator<'a> {
     type Item = Vec<ScannerData>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -124,18 +124,18 @@ impl Iterator for ScannerSubscriptionIterator {
     }
 }
 
-impl Drop for ScannerSubscriptionIterator {
+impl<'a> Drop for ScannerSubscriptionIterator<'a> {
     fn drop(&mut self) {
         self.cancel().unwrap();
     }
 }
 
-pub(crate) fn scanner_subscription(
-    client: &Client,
+pub(crate) fn scanner_subscription<'a>(
+    client: &'a Client,
     scanner_subscription: &ScannerSubscription,
     scanner_subscription_options: Option<&ScannerSubscriptionOptions>,
     scanner_subscription_filter: Option<&ScannerSubscriptionFilter>,
-) -> Result<ScannerSubscriptionIterator, Error> {
+) -> Result<ScannerSubscriptionIterator<'a>, Error> {
     let filter = match scanner_subscription_filter {
         Some(filter) => filter.to_owned(),
         None => Vec::<TagValue>::default(),
