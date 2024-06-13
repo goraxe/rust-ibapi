@@ -14,7 +14,7 @@ use crate::client::transport::{GlobalResponseIterator, MessageBus, ResponseItera
 use crate::contracts::Contract;
 use crate::errors::Error;
 use crate::market_data::realtime::{self, Bar, BarSize, RealTimeBarIterator, WhatToShow};
-use crate::market_data::scanners::{ScannerData, ScannerSubscription, ScannerSubscriptionFilter, ScannerSubscriptionOptions};
+use crate::market_data::scanners::{ScannerData, ScannerSubscription, ScannerSubscriptionFilter, ScannerSubscriptionIterator, ScannerSubscriptionOptions};
 use crate::market_data::{historical, scanners};
 use crate::messages::RequestMessage;
 use crate::messages::{IncomingMessages, OutgoingMessages};
@@ -920,7 +920,7 @@ impl Client {
         subscription: &ScannerSubscription,
         scanner_subscription_options: Option<&ScannerSubscriptionOptions>,
         scanner_subscription_filter: Option<&ScannerSubscriptionFilter>,
-    ) -> Result<impl Iterator<Item = Vec<ScannerData>> + 'a + Clone, Error> {
+    ) -> Result<ScannerSubscriptionIterator, Error> {
         scanners::scanner_subscription(self,
             subscription,
             scanner_subscription_options,
