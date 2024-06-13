@@ -74,6 +74,7 @@ pub struct ScannerData {
     pub legs: String,
 }
 
+#[derive(Clone)]
 pub(crate) struct ScannerSubscriptionIterator<'a> {
     client: &'a Client,
     request_id: i32,

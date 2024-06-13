@@ -920,7 +920,7 @@ impl Client {
         subscription: &ScannerSubscription,
         scanner_subscription_options: Option<&ScannerSubscriptionOptions>,
         scanner_subscription_filter: Option<&ScannerSubscriptionFilter>,
-    ) -> Result<impl Iterator<Item = Vec<ScannerData>> + 'a, Error> {
+    ) -> Result<impl Iterator<Item = Vec<ScannerData>> + 'a + Clone, Error> {
         scanners::scanner_subscription(self,
             subscription,
             scanner_subscription_options,

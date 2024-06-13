@@ -573,7 +573,7 @@ impl<K: std::hash::Hash + Eq + std::fmt::Debug, V: std::fmt::Debug> SenderHash<K
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct ResponseIterator {
     messages: Receiver<ResponseMessage>, // for client to receive incoming messages
     signals: Sender<Signal>,             // for client to signal termination
