@@ -75,7 +75,7 @@ pub struct ScannerData {
 }
 
 #[derive(Clone)]
-pub(crate) struct ScannerSubscriptionIterator<'a> {
+pub struct ScannerSubscriptionIterator<'a> {
     client: &'a Client,
     request_id: i32,
     responses: ResponseIterator,
