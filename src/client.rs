@@ -13,7 +13,7 @@ use crate::accounts::{AccountSummary, FamilyCode, PnL, Position};
 use crate::client::transport::{GlobalResponseIterator, MessageBus, ResponseIterator, TcpMessageBus};
 use crate::contracts::Contract;
 use crate::errors::Error;
-use crate::market_data::realtime::{self, Bar, BarSize, WhatToShow};
+use crate::market_data::realtime::{self, Bar, BarSize, RealTimeBarIterator, WhatToShow};
 use crate::market_data::scanners::{ScannerData, ScannerSubscription, ScannerSubscriptionFilter, ScannerSubscriptionOptions};
 use crate::market_data::{historical, scanners};
 use crate::messages::RequestMessage;
@@ -851,7 +851,7 @@ impl Client {
         bar_size: BarSize,
         what_to_show: WhatToShow,
         use_rth: bool,
-    ) -> Result<impl Iterator<Item = Bar> + Clone + Send + Sync + 'a, Error> {
+    ) -> Result<realtime::RealTimeBarIterator, Error> {
         realtime::realtime_bars(self, contract, &bar_size, &what_to_show, use_rth, Vec::default())
     }
 

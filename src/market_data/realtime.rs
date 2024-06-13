@@ -257,7 +257,7 @@ pub(crate) fn tick_by_tick_midpoint<'a>(
 
 /// RealTimeBarIterator supports iteration over [RealTimeBar] ticks.
 #[derive(Clone)]
-pub(crate) struct RealTimeBarIterator<'a> {
+pub struct RealTimeBarIterator<'a> {
     client: &'a Client,
     request_id: i32,
     responses: ResponseIterator,
