@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 // request_scanner_submod encoders;
 use log::error;
 pub mod decoders;
@@ -75,14 +77,14 @@ pub struct ScannerData {
 }
 
 #[derive(Clone)]
-pub struct ScannerSubscriptionIterator<'a> {
-    client: &'a Client,
+pub struct ScannerSubscriptionIterator {
+    client: Arc<Client>,
     request_id: i32,
     responses: ResponseIterator,
 }
 
-impl<'a> ScannerSubscriptionIterator<'a> {
-    fn new(client: &'a Client, request_id: i32, responses: ResponseIterator) -> Self {
+impl ScannerSubscriptionIterator {
+    fn new(client: Arc<Client>, request_id: i32, responses: ResponseIterator) -> Self {
         Self {
             client,
             request_id,
@@ -96,7 +98,7 @@ impl<'a> ScannerSubscriptionIterator<'a> {
     }
 }
 
-impl<'a> Iterator for ScannerSubscriptionIterator<'a> {
+impl Iterator for ScannerSubscriptionIterator {
     type Item = Vec<ScannerData>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -118,25 +120,25 @@ impl<'a> Iterator for ScannerSubscriptionIterator<'a> {
 
                 /*
                 IncomingMessages::Error => Err(Error::Simple(message.peek_string(4))),
-                _ => Err(Error::Simple(format!("unexpected message: {:?}", message.message_type()))),*/
+             _ => Err(Error::Simple(format!("unexpected message: {:?}", message.message_type()))),*/
             },
             None => None,
         }
-    }
+  }
 }
 
-impl<'a> Drop for ScannerSubscriptionIterator<'a> {
+impl Drop for ScannerSubscriptionIterator {
     fn drop(&mut self) {
         self.cancel().unwrap();
     }
 }
 
-pub(crate) fn scanner_subscription<'a>(
-    client: &'a Client,
+pub(crate) fn scanner_subscription(
+    client: Arc<Client>,
     scanner_subscription: &ScannerSubscription,
     scanner_subscription_options: Option<&ScannerSubscriptionOptions>,
     scanner_subscription_filter: Option<&ScannerSubscriptionFilter>,
-) -> Result<ScannerSubscriptionIterator<'a>, Error> {
+) -> Result<ScannerSubscriptionIterator, Error> {
     let filter = match scanner_subscription_filter {
         Some(filter) => filter.to_owned(),
         None => Vec::<TagValue>::default(),

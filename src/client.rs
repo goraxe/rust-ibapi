@@ -915,8 +915,8 @@ impl Client {
         realtime::tick_by_tick_midpoint(self, contract, number_of_ticks, ignore_size)
     }
 
-    pub fn scanner_subscription<'a>(
-        &'a self,
+    pub fn scanner_subscription(
+        self: Arc<Self> ,
         subscription: &ScannerSubscription,
         scanner_subscription_options: Option<&ScannerSubscriptionOptions>,
         scanner_subscription_filter: Option<&ScannerSubscriptionFilter>,
