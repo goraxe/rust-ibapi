@@ -846,7 +846,7 @@ impl Client {
     /// }
     /// ```
     pub fn realtime_bars<'a>(
-        &'a self,
+        self: Arc<Self>,
         contract: &Contract,
         bar_size: BarSize,
         what_to_show: WhatToShow,
@@ -862,7 +862,7 @@ impl Client {
     /// * `number_of_ticks` - number of ticks.
     /// * `ignore_size` - ignore size flag.
     pub fn tick_by_tick_all_last<'a>(
-        &'a self,
+        self: Arc<Self>,
         contract: &Contract,
         number_of_ticks: i32,
         ignore_size: bool,
@@ -877,7 +877,7 @@ impl Client {
     /// * `number_of_ticks` - number of ticks.
     /// * `ignore_size` - ignore size flag.
     pub fn tick_by_tick_bid_ask<'a>(
-        &'a self,
+        self: Arc<Self>,
         contract: &Contract,
         number_of_ticks: i32,
         ignore_size: bool,
@@ -892,7 +892,7 @@ impl Client {
     /// * `number_of_ticks` - number of ticks.
     /// * `ignore_size` - ignore size flag.
     pub fn tick_by_tick_last<'a>(
-        &'a self,
+        self: Arc<Self>,
         contract: &Contract,
         number_of_ticks: i32,
         ignore_size: bool,
@@ -907,7 +907,7 @@ impl Client {
     /// * `number_of_ticks` - number of ticks.
     /// * `ignore_size` - ignore size flag.
     pub fn tick_by_tick_midpoint<'a>(
-        &'a self,
+        self: Arc<Self>,
         contract: &Contract,
         number_of_ticks: i32,
         ignore_size: bool,

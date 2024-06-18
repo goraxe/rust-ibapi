@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use log::error;
 use time::OffsetDateTime;
 
@@ -126,14 +128,14 @@ impl ToField for WhatToShow {
 // === Implementation ===
 
 // Requests realtime bars.
-pub(crate) fn realtime_bars<'a>(
-    client: &'a Client,
+pub(crate) fn realtime_bars(
+    client: Arc<Client>,
     contract: &Contract,
     bar_size: &BarSize,
     what_to_show: &WhatToShow,
     use_rth: bool,
     options: Vec<TagValue>,
-) -> Result<RealTimeBarIterator<'a>, Error> {
+) -> Result<RealTimeBarIterator, Error> {
     client.check_server_version(server_versions::REAL_TIME_BARS, "It does not support real time bars.")?;
 
     if !contract.trading_class.is_empty() || contract.contract_id > 0 {
@@ -152,13 +154,13 @@ pub(crate) fn realtime_bars<'a>(
 }
 
 // Requests tick by tick AllLast ticks.
-pub(crate) fn tick_by_tick_all_last<'a>(
-    client: &'a Client,
+pub(crate) fn tick_by_tick_all_last(
+    client: Arc<Client>,
     contract: &Contract,
     number_of_ticks: i32,
     ignore_size: bool,
-) -> Result<impl Iterator<Item = Trade> + 'a, Error> {
-    validate_tick_by_tick_request(client, contract, number_of_ticks, ignore_size)?;
+) -> Result<impl Iterator<Item = Trade>, Error> {
+    validate_tick_by_tick_request(client.clone(), contract, number_of_ticks, ignore_size)?;
 
     let server_version = client.server_version();
     let request_id = client.next_request_id();
@@ -174,7 +176,7 @@ pub(crate) fn tick_by_tick_all_last<'a>(
 }
 
 // Validates that server supports the given request.
-fn validate_tick_by_tick_request(client: &Client, _contract: &Contract, number_of_ticks: i32, ignore_size: bool) -> Result<(), Error> {
+fn validate_tick_by_tick_request(client: Arc<Client>, _contract: &Contract, number_of_ticks: i32, ignore_size: bool) -> Result<(), Error> {
     client.check_server_version(server_versions::TICK_BY_TICK, "It does not support tick-by-tick requests.")?;
 
     if number_of_ticks != 0 || ignore_size {
@@ -188,13 +190,13 @@ fn validate_tick_by_tick_request(client: &Client, _contract: &Contract, number_o
 }
 
 // Requests tick by tick Last ticks.
-pub(crate) fn tick_by_tick_last<'a>(
-    client: &'a Client,
+pub(crate) fn tick_by_tick_last(
+    client: Arc<Client>,
     contract: &Contract,
     number_of_ticks: i32,
     ignore_size: bool,
-) -> Result<TradeIterator<'a>, Error> {
-    validate_tick_by_tick_request(client, contract, number_of_ticks, ignore_size)?;
+) -> Result<TradeIterator, Error> {
+    validate_tick_by_tick_request(client.clone(), contract, number_of_ticks, ignore_size)?;
 
     let server_version = client.server_version();
     let request_id = client.next_request_id();
@@ -210,13 +212,13 @@ pub(crate) fn tick_by_tick_last<'a>(
 }
 
 // Requests tick by tick BidAsk ticks.
-pub(crate) fn tick_by_tick_bid_ask<'a>(
-    client: &'a Client,
+pub(crate) fn tick_by_tick_bid_ask(
+    client: Arc<Client>,
     contract: &Contract,
     number_of_ticks: i32,
     ignore_size: bool,
-) -> Result<BidAskIterator<'a>, Error> {
-    validate_tick_by_tick_request(client, contract, number_of_ticks, ignore_size)?;
+) -> Result<BidAskIterator, Error> {
+    validate_tick_by_tick_request(client.clone(), contract, number_of_ticks, ignore_size)?;
 
     let server_version = client.server_version();
     let request_id = client.next_request_id();
@@ -232,13 +234,13 @@ pub(crate) fn tick_by_tick_bid_ask<'a>(
 }
 
 // Requests tick by tick MidPoint ticks.
-pub(crate) fn tick_by_tick_midpoint<'a>(
-    client: &'a Client,
+pub(crate) fn tick_by_tick_midpoint(
+    client: Arc<Client>,
     contract: &Contract,
     number_of_ticks: i32,
     ignore_size: bool,
-) -> Result<MidPointIterator<'a>, Error> {
-    validate_tick_by_tick_request(client, contract, number_of_ticks, ignore_size)?;
+) -> Result<MidPointIterator, Error> {
+    validate_tick_by_tick_request(client.clone(), contract, number_of_ticks, ignore_size)?;
 
     let server_version = client.server_version();
     let request_id = client.next_request_id();
@@ -257,14 +259,14 @@ pub(crate) fn tick_by_tick_midpoint<'a>(
 
 /// RealTimeBarIterator supports iteration over [RealTimeBar] ticks.
 #[derive(Clone)]
-pub struct RealTimeBarIterator<'a> {
-    client: &'a Client,
+pub struct RealTimeBarIterator {
+    client: Arc<Client>,
     request_id: i32,
     responses: ResponseIterator,
 }
 
-impl<'a> RealTimeBarIterator<'a> {
-    fn new(client: &'a Client, request_id: i32, responses: ResponseIterator) -> RealTimeBarIterator<'a> {
+impl RealTimeBarIterator {
+    fn new(client: Arc<Client>, request_id: i32, responses: ResponseIterator) -> RealTimeBarIterator {
         RealTimeBarIterator {
             client,
             request_id,
@@ -279,7 +281,7 @@ impl<'a> RealTimeBarIterator<'a> {
     }
 }
 
-impl<'a> Iterator for RealTimeBarIterator<'a> {
+impl Iterator for RealTimeBarIterator {
     type Item = Bar;
 
     /// Advances the iterator and returns the next value.
@@ -307,27 +309,27 @@ impl<'a> Iterator for RealTimeBarIterator<'a> {
     }
 }
 
-impl<'a> Drop for RealTimeBarIterator<'a> {
+impl Drop for RealTimeBarIterator {
     fn drop(&mut self) {
         self.cancel_realtime_bars()
     }
 }
 
 /// TradeIterator supports iteration over [Trade] ticks.
-pub(crate) struct TradeIterator<'a> {
-    client: &'a Client,
+pub(crate) struct TradeIterator {
+    client: Arc<Client>,
     request_id: i32,
     responses: ResponseIterator,
 }
 
-impl<'a> Drop for TradeIterator<'a> {
+impl Drop for TradeIterator {
     // Ensures tick by tick request is cancelled
     fn drop(&mut self) {
-        cancel_tick_by_tick(self.client, self.request_id);
+        cancel_tick_by_tick(self.client.as_ref(), self.request_id);
     }
 }
 
-impl<'a> Iterator for TradeIterator<'a> {
+impl Iterator for TradeIterator {
     type Item = Trade;
 
     /// Advances the iterator and returns the next value.
@@ -348,8 +350,8 @@ impl<'a> Iterator for TradeIterator<'a> {
 }
 
 /// BidAskIterator supports iteration over [BidAsk] ticks.
-pub(crate) struct BidAskIterator<'a> {
-    client: &'a Client,
+pub(crate) struct BidAskIterator {
+    client: Arc<Client>,
     request_id: i32,
     responses: ResponseIterator,
 }
@@ -362,14 +364,14 @@ fn cancel_tick_by_tick(client: &Client, request_id: i32) {
     }
 }
 
-impl<'a> Drop for BidAskIterator<'a> {
+impl Drop for BidAskIterator {
     // Ensures tick by tick request is cancelled
     fn drop(&mut self) {
-        cancel_tick_by_tick(self.client, self.request_id);
+        cancel_tick_by_tick(self.client.as_ref(), self.request_id);
     }
 }
 
-impl<'a> Iterator for BidAskIterator<'a> {
+impl Iterator for BidAskIterator {
     type Item = BidAsk;
 
     /// Advances the iterator and returns the next value.
@@ -390,20 +392,20 @@ impl<'a> Iterator for BidAskIterator<'a> {
 }
 
 /// MidPointIterator supports iteration over [MidPoint] ticks.
-pub(crate) struct MidPointIterator<'a> {
-    client: &'a Client,
+pub(crate) struct MidPointIterator {
+    client: Arc<Client>,
     request_id: i32,
     responses: ResponseIterator,
 }
 
-impl<'a> Drop for MidPointIterator<'a> {
+impl Drop for MidPointIterator {
     // Ensures tick by tick request is cancelled
     fn drop(&mut self) {
-        cancel_tick_by_tick(self.client, self.request_id);
+        cancel_tick_by_tick(self.client.as_ref(), self.request_id);
     }
 }
 
-impl<'a> Iterator for MidPointIterator<'a> {
+impl Iterator for MidPointIterator {
     type Item = MidPoint;
 
     /// Advances the iterator and returns the next value.
